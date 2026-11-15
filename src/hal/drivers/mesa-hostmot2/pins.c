@@ -700,6 +700,8 @@ int hm2_read_pin_descriptors(hostmot2_t *hm2) {
     int addr;
 
     const rtapi_u8 DB25[] = {1,14,2,15,3,16,4,17,5,6,7,8,9,10,11,12,13};
+    /* EBAZ4205 2 mm DATA1..3 headers: 14 PL I/O each (pins 1-4, 10 and 12 are power, ground, NC) */
+    const rtapi_u8 EBAZ14[] = {5,6,7,8,9,11,13,14,15,16,17,18,19,20};
     
     hm2->num_pins = hm2->idrom.io_width;
     hm2->pin = rtapi_kmalloc(sizeof(hm2_pin_t) * hm2->num_pins, RTAPI_GFP_KERNEL);
@@ -767,6 +769,9 @@ int hm2_read_pin_descriptors(hostmot2_t *hm2) {
                 break;
             case 17:    /* 25 pin 17 I/O parallel port type cards funny DB25 order */
                 pin->port_pin = DB25[i % 17];
+                break;
+            case 14:    /* EBAZ4205 (Zynq) DATA headers, hm2_soc_ol */
+                pin->port_pin = EBAZ14[i % 14];
                 break;
             case 32:      /* 5I21 punt on this for now */
             case 19:      /* 7C81 */
