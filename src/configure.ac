@@ -89,15 +89,15 @@ fi
 # check for rpc/rpc.h
 #
 AC_CHECK_HEADER([rpc/rpc.h],[], [
-  if ! test -z "$PKG_CONFIG libtirpc"; then
+  if $PKG_CONFIG --exists libtirpc; then
 
-    LIBTIRPC_CFLAGS=`pkg-config libtirpc --cflags`
+    LIBTIRPC_CFLAGS=`$PKG_CONFIG libtirpc --cflags`
     AC_SUBST([LIBTIRPC_CFLAGS])
 
-    LIBTIRPC_LIBS=`pkg-config libtirpc --libs`
+    LIBTIRPC_LIBS=`$PKG_CONFIG libtirpc --libs`
     AC_SUBST([LIBTIRPC_LIBS])
 
-    CFLAGS="${CFLAGS:+$CFLAGS }$(pkg-config libtirpc --cflags)"
+    CFLAGS="${CFLAGS:+$CFLAGS }$($PKG_CONFIG libtirpc --cflags)"
   fi
 
   # Update path
@@ -676,6 +676,15 @@ AC_DEFINE_UNQUOTED([EMC2_DEFAULT_TOOLTABLE], "$DEFAULT_TOOLTABLE", [Default nml 
 # we decide based on RIP or install where stuff goes                         #
 ##############################################################################
 
+AC_ARG_WITH([tcl-dir],
+    [AS_HELP_STRING([--with-tcl-dir=DIR],
+        [directory for LinuxCNC Tcl scripts (default: auto-detected from tcl_pkgPath)])],
+    [EMC2_TCL_DIR="$withval"],
+    [TCL_GET_DIR=$(echo [['set d [lindex [lsearch -all -inline -glob $tcl_pkgPath /usr/share/*] 0]; if {$d eq ""} {set d [lindex [lsearch -all -inline -glob $tcl_pkgPath /usr/lib*] 0]}; puts $d']] | tclsh 2>/dev/null)
+     AS_IF([test -z "$TCL_GET_DIR"],
+           [AC_MSG_ERROR([could not determine Tcl package dir from tcl_pkgPath])])
+     EMC2_TCL_DIR="$TCL_GET_DIR/linuxcnc"])
+
 fe () {
     # Fully expand argument.  Example:
     # ${datadir} -> ${datarootdir} -> ${prefix}/share -> /usr/local
@@ -711,9 +720,8 @@ else
     EMC2_SCRIPT=$EMC2_BIN_DIR/linuxcnc
     EMC2_SUFFIX=""
     EMC2_ICON=linuxcncicon
-    EMC2_TCL_DIR=${prefix}/lib/tcltk/linuxcnc
-    EMC2_TCL_LIB_DIR=${prefix}/lib/tcltk/linuxcnc
-    EMC2_LANG_DIR=${prefix}/lib/tcltk/linuxcnc/msgs
+    EMC2_TCL_LIB_DIR="${EMC2_TCL_DIR}"
+    EMC2_LANG_DIR="${EMC2_TCL_DIR}/msgs"
     EMC2_PO_DIR=${prefix}/share/locale
     EMC2_HELP_DIR=${prefix}/share/doc/linuxcnc
     case $MODULE_DIR in
@@ -1628,7 +1636,7 @@ fi
 AC_MSG_RESULT([$PYTHON_TK_VERSION])
 
 AC_MSG_CHECKING(for site-package location)
-SITEPY="$($PYTHON -c 'import sysconfig; s = sysconfig.get_scheme_names(); m=list(set(("deb_system", "rpm_prefix")) & set(s)); print(sysconfig.get_path("platlib", m.__getitem__(0))) if m else print("/usr/lib/python3/dist-packages");')"
+SITEPY=`$PYTHON -c "import sysconfig; s=sysconfig.get_scheme_names(); print(next((sysconfig.get_path('platlib', m) for m in ('deb_system', 'rpm_prefix') if m in s), sysconfig.get_path('platlib')))"`
 AC_MSG_RESULT($SITEPY)
 
 AC_MSG_CHECKING(for working GLU quadrics)

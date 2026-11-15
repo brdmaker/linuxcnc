@@ -408,13 +408,13 @@ void STOP_CUTTER_RADIUS_COMPENSATION(int direction) {}
 void START_SPEED_FEED_SYNCH() {}
 void START_SPEED_FEED_SYNCH(int spindle, double sync, bool vel) {}
 void STOP_SPEED_FEED_SYNCH() {}
-void START_SPINDLE_COUNTERCLOCKWISE(int spindle, int wait_for_at_speed) {}
-void START_SPINDLE_CLOCKWISE(int spindle, int wait_for_at_speed) {}
-void SET_SPINDLE_MODE(int spindle, double) {}
-void STOP_SPINDLE_TURNING(int spindle) {}
-void SET_SPINDLE_SPEED(int spindle, double rpm) {}
-void ORIENT_SPINDLE(int spindle, double d, int i) {}
-void WAIT_SPINDLE_ORIENT_COMPLETE(int s, double timeout) {}
+void START_SPINDLE_COUNTERCLOCKWISE(int /*spindle*/, int /*wait_for_at_speed*/) {}
+void START_SPINDLE_CLOCKWISE(int /*spindle*/, int /*wait_for_at_speed*/) {}
+void SET_SPINDLE_MODE(int /*spindle*/, double) {}
+void STOP_SPINDLE_TURNING(int /*spindle*/, int /*wait_for_at_speed*/) {}
+void SET_SPINDLE_SPEED(int /*spindle*/, double /*rpm*/) {}
+void ORIENT_SPINDLE(int /*spindle*/, double /*d*/, int /*i*/) {}
+void WAIT_SPINDLE_ORIENT_COMPLETE(int /*s*/, double /*timeout*/) {}
 void PROGRAM_STOP() {}
 void PROGRAM_END() {}
 void FINISH() {}
@@ -808,9 +808,9 @@ out_error:
             PyErr_Format(PyExc_RuntimeError,
                     "interp_error > 0 but no Python exception set");
         } else {
-            // seems a PyErr_Ocurred(), but no exception was set ?
-            // so return error info that can be caught and handled
-            PyErr_Format(PyExc_RuntimeError,"parse_file interp_error");
+            // Keep the exception that the failing callback set: overwriting
+            // it here with a generic RuntimeError hides the actual error
+            // from the caller (#2492).
             fprintf(stderr,"!!!%s: parse_file() f=%s\n"
                     "!!!interp_error=%d result=%d last_sequence_number=%d\n",
                     __FILE__,f,interp_error,result,last_sequence_number);

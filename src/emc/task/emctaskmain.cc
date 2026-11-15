@@ -505,11 +505,18 @@ void readahead_reading(void)
                     int count = 0;
 interpret_again:
 		    if (emcTaskPlanIsWait()) {
-			// delay reading of next line until all is done
+			// delay reading of next line until all is done.
+			// Match the stricter check used by mdi_execute_hook:
+			// trusting only execState==DONE can race when motion
+			// hasn't yet processed a just-issued command (e.g. a
+			// G38 probe), letting the next read see a non-empty
+			// queue.
 			if (interp_list.len() == 0 &&
 			    emcTaskCommand == 0 &&
 			    emcStatus->task.execState ==
-			    EMC_TASK_EXEC_DONE) {
+			    EMC_TASK_EXEC_DONE &&
+			    emcStatus->motion.traj.queue == 0 &&
+			    emcStatus->io.status == RCS_DONE) {
 			    emcTaskPlanClearWait();
 			 }
 		    } else {
@@ -2008,8 +2015,8 @@ static int emcTaskIssueCommand(NMLmsg * cmd)
 	break;
 
     case EMC_SPINDLE_OFF_TYPE:
-    spindle_off_msg = (EMC_SPINDLE_OFF *) cmd;
-	retval = emcSpindleOff(spindle_off_msg->spindle);
+    spindle_off_msg = reinterpret_cast<EMC_SPINDLE_OFF *>(cmd);
+	retval = emcSpindleOff(spindle_off_msg->spindle, spindle_off_msg->wait_for_spindle_at_speed);
 	break;
 
     case EMC_SPINDLE_BRAKE_RELEASE_TYPE:
